@@ -37,9 +37,14 @@ async function predict() {
         let top = prediction.sort((a, b) => b.probability - a.probability)[0];
         
         if (top.probability > 0.8) {
-            let res = top.className.includes("红") ? "红灯，请等待" : "绿灯，请通行";
-            document.getElementById('info').innerText = res;
-        }
+     let res = top.className.includes("红") ? "红灯，请等待" : "绿灯，请通行";
+     document.getElementById('info').innerText = res;
+        // 关键逻辑：如果状态变了，才播报（防止变复读机）
+     if (res !== lastSpoken) {
+        speakWithWeb(res);
+         lastSpoken = res;
+     }
+   }
     }
     setTimeout(predict, 1000);
 }
@@ -48,5 +53,22 @@ function draw() {
     background(0);
     if (webcam && webcam.loadedmetadata) {
         image(webcam, 0, 0, width, height);
+    }
+}
+function speakWithWeb(text) {
+    if ('speechSynthesis' in window) {
+        // 强制恢复语音引擎（手机浏览器必备）
+        window.speechSynthesis.resume(); 
+        // 取消之前的排队播报，确保立刻播报当前状态
+        window.speechSynthesis.cancel(); 
+        
+        let utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN'; // 中文
+        utterance.rate = 1.0;
+        utterance.volume = 1.0;
+        
+        window.speechSynthesis.speak(utterance);
+    } else {
+        console.log("您的浏览器不支持语音功能");
     }
 }
