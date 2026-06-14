@@ -40,7 +40,7 @@ async function predict() {
             
             // 语音逻辑
             if (res !== lastSpoken) {
-                speakText(res);
+                playSound(res);
                 lastSpoken = res;
                 // 5秒后允许再次播报
                 setTimeout(() => { lastSpoken = ""; }, 5000);
@@ -51,14 +51,16 @@ async function predict() {
 }
 
 // === 5. 语音核心函数 ===
-function speakText(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // 取消之前的任务
-        let msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'zh-CN';
-        msg.volume = 1;
-        msg.rate = 1;
-        window.speechSynthesis.speak(msg);
+// === 1. 初始化音频对象 ===
+let redSound = new Audio('red.mp3');
+let greenSound = new Audio('green.mp3');
+
+// === 2. 替换原来的语音函数 ===
+function playSound(type) {
+    if (type === "红灯，请等待") {
+        redSound.play();
+    } else if (type === "绿灯，请通行") {
+        greenSound.play();
     }
 }
 
