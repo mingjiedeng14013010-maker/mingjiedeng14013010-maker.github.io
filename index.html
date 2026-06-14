@@ -9,13 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
     <style>
         body { margin:0; padding:0; background:black; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
-        #info { position:fixed; top:20px; color:white; font-size:18px; text-align:center; z-index:10; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; }
-        button { padding:20px 40px; font-size:20px; z-index:20; }
+        #info { position:fixed; top:20px; color:white; font-size:20px; text-align:center; z-index:10; background:rgba(0,0,0,0.6); padding:15px; border-radius:10px; }
+        button { padding:20px 40px; font-size:20px; z-index:20; cursor:pointer; }
     </style>
 </head>
 <body>
-    <div id="info">请点击启动</div>
-    <button id="startBtn" onclick="init()">点击启动系统</button>
+    <div id="info">请点击启动系统</div>
+    <button id="startBtn" onclick="start()">点击启动</button>
     <script src="sketch.js"></script>
 </body>
 </html>
