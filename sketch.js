@@ -1,34 +1,35 @@
-// === 1. 配置部分 ===
 let model, webcam;
-let lastSpoken = ""; // 防止重复播报
-const URL = "https://teachablemachine.withgoogle.com/models/UZtdHT8jF/"; // 确保这是你的模型链接
+let lastSpoken = ""; 
+// 确保这个URL是你 Teachable Machine 导出的模型链接
+const URL = "https://teachablemachine.withgoogle.com/models/UZtdHT8jF/"; 
 
-// === 2. 页面初始化 ===
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    let constraints = { video: { facingMode: "environment" }, audio: false };
-    webcam = createCapture(constraints);
-    webcam.hide();
-    noLoop(); // 只有点按钮启动后才开始
+    noLoop(); // 启动前不运行
 }
 
-// === 3. 启动逻辑 (点击按钮调用此函数) ===
 async function start() {
     document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('info').innerText = "加载中，请稍候...";
+    document.getElementById('info').innerText = "加载中...";
     
-    // 加载模型
-    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
-    document.getElementById('info').innerText = "加载成功，开始识别";
-    
-    // 强制唤醒浏览器语音引擎
-    window.speechSynthesis.resume();
-    
-    loop(); // 开始绘制和识别
-    predict();
+    try {
+        // 1. 初始化摄像头
+        let constraints = { video: { facingMode: "environment" }, audio: false };
+        webcam = createCapture(constraints);
+        webcam.hide();
+
+        // 2. 加载模型
+        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+        
+        document.getElementById('info').innerText = "系统运行中";
+        loop();
+        predict();
+    } catch (e) {
+        document.getElementById('info').innerText = "启动失败: " + e.message;
+        console.error(e);
+    }
 }
 
-// === 4. 循环识别逻辑 ===
 async function predict() {
     if (webcam && webcam.loadedmetadata) {
         const prediction = await model.predict(webcam.elt);
@@ -38,33 +39,29 @@ async function predict() {
             let res = top.className.includes("红") ? "红灯，请等待" : "绿灯，请通行";
             document.getElementById('info').innerText = res;
             
-            // 语音逻辑
+            // 语音逻辑：防止复读，如果状态变了才说话
             if (res !== lastSpoken) {
-                playSound(res);
+                speak(res);
                 lastSpoken = res;
-                // 5秒后允许再次播报
+                // 5秒后重置，允许再次播报
                 setTimeout(() => { lastSpoken = ""; }, 5000);
             }
         }
     }
-    setTimeout(predict, 1000); // 每秒识别一次，避免卡顿
+    setTimeout(predict, 1000);
 }
 
-// === 5. 语音核心函数 ===
-// === 1. 初始化音频对象 ===
-let redSound = new Audio('red.mp3');
-let greenSound = new Audio('green.mp3');
-
-// === 2. 替换原来的语音函数 ===
-function playSound(type) {
-    if (type === "红灯，请等待") {
-        redSound.play();
-    } else if (type === "绿灯，请通行") {
-        greenSound.play();
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 取消之前的任务
+        let msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.volume = 1;
+        msg.rate = 1;
+        window.speechSynthesis.speak(msg);
     }
 }
 
-// === 6. 画面显示 ===
 function draw() {
     background(0);
     if (webcam && webcam.loadedmetadata) {
