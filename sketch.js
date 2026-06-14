@@ -1,74 +1,71 @@
+// === 1. 配置部分 ===
 let model, webcam;
-// ⚠️ 确保这个链接是你 Teachable Machine 导出的那个，结尾必须有 /
-const URL = "https://teachablemachine.withgoogle.com/models/UZtdHT8jF/";
+let lastSpoken = ""; // 防止重复播报
+const URL = "https://teachablemachine.withgoogle.com/models/UZtdHT8jF/"; // 确保这是你的模型链接
 
-async function init() {
-    document.getElementById('startBtn').style.display = 'none';
-    document.getElementById('info').innerText = "1/3: 正在连接...";
-
-    try {
-        // 1. 初始化摄像头
-        document.getElementById('info').innerText = "2/3: 正在打开摄像头...";
-        const constraints = { video: { facingMode: "environment" }, audio: false };
-        webcam = createCapture(constraints);
-        webcam.hide();
-
-        // 2. 加载模型
-        document.getElementById('info').innerText = "3/3: 正在下载模型文件...";
-        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
-        
-        document.getElementById('info').innerText = "加载完成！";
-        loop();
-        predict();
-    } catch (err) {
-        document.getElementById('info').innerText = "报错了: " + err.message;
-        console.error(err);
-    }
-}
-
+// === 2. 页面初始化 ===
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    noLoop(); // 只有点启动后才开始循环
+    let constraints = { video: { facingMode: "environment" }, audio: false };
+    webcam = createCapture(constraints);
+    webcam.hide();
+    noLoop(); // 只有点按钮启动后才开始
 }
 
+// === 3. 启动逻辑 (点击按钮调用此函数) ===
+async function start() {
+    document.getElementById('startBtn').style.display = 'none';
+    document.getElementById('info').innerText = "加载中，请稍候...";
+    
+    // 加载模型
+    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+    document.getElementById('info').innerText = "加载成功，开始识别";
+    
+    // 强制唤醒浏览器语音引擎
+    window.speechSynthesis.resume();
+    
+    loop(); // 开始绘制和识别
+    predict();
+}
+
+// === 4. 循环识别逻辑 ===
 async function predict() {
     if (webcam && webcam.loadedmetadata) {
         const prediction = await model.predict(webcam.elt);
         let top = prediction.sort((a, b) => b.probability - a.probability)[0];
         
         if (top.probability > 0.8) {
-     let res = top.className.includes("红") ? "红灯，请等待" : "绿灯，请通行";
-     document.getElementById('info').innerText = res;
-        // 关键逻辑：如果状态变了，才播报（防止变复读机）
-     if (res !== lastSpoken) {
-        speakWithWeb(res);
-         lastSpoken = res;
-     }
-   }
+            let res = top.className.includes("红") ? "红灯，请等待" : "绿灯，请通行";
+            document.getElementById('info').innerText = res;
+            
+            // 语音逻辑
+            if (res !== lastSpoken) {
+                speakText(res);
+                lastSpoken = res;
+                // 5秒后允许再次播报
+                setTimeout(() => { lastSpoken = ""; }, 5000);
+            }
+        }
     }
-    setTimeout(predict, 1000);
+    setTimeout(predict, 1000); // 每秒识别一次，避免卡顿
 }
 
+// === 5. 语音核心函数 ===
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 取消之前的任务
+        let msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-CN';
+        msg.volume = 1;
+        msg.rate = 1;
+        window.speechSynthesis.speak(msg);
+    }
+}
+
+// === 6. 画面显示 ===
 function draw() {
     background(0);
     if (webcam && webcam.loadedmetadata) {
         image(webcam, 0, 0, width, height);
-    }
-}
-function speakWithWeb(text) {
-    if ('speechSynthesis' in window) {
-        // 强制恢复语音引擎（手机浏览器必备）
-        window.speechSynthesis.resume(); 
-        // 取消之前的排队播报，确保立刻播报当前状态
-        window.speechSynthesis.cancel(); 
-        
-        let utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'zh-CN'; // 中文
-        utterance.rate = 1.0;
-        utterance.volume = 1.0;
-        
-        window.speechSynthesis.speak(utterance);
-    } else {
-        console.log("您的浏览器不支持语音功能");
     }
 }
