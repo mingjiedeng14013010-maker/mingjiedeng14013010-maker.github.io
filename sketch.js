@@ -4,6 +4,13 @@ let lastSpoken = "";
 const URL = "https://teachablemachine.withgoogle.com/models/UZtdHT8jF/"; 
 
 function setup() {
+    // 添加这段代码，强制解锁手机浏览器的音频权限
+document.addEventListener('touchstart', function() {
+    let context = new (window.AudioContext || window.webkitAudioContext)();
+    context.resume(); // 强制恢复音频上下文
+    window.speechSynthesis.resume(); // 强制恢复语音引擎
+    console.log("音频已通过触摸解锁");
+}, { once: true });
     createCanvas(windowWidth, windowHeight);
     noLoop(); // 启动前保持静止
 }
